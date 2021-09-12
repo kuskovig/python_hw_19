@@ -24,15 +24,11 @@ args = parser.parse_args()
 for file in args.f:
     if file.endswith(".log"):
         with open(file) as log:
-            logfile = log.read()
+            logfile = [x for x in log.readlines()]
+
 
 def total_requests():
-    """
-    :return: 1 for every valid request
-    """
-    re_request = r"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
-    list_of_ips = [x.group(0) for x in re.finditer(re_request, logfile, re.MULTILINE)]
-
+    list_of_ips = [('').join(ip.split(" ")[:1]) for ip in logfile]
     return list_of_ips
 
 
@@ -44,24 +40,18 @@ def top3_ips(list_of_ips):
 
 def amount_of_http_methods():
     re_http_methods = r'(] ")((GET)|(POST)|(PUT)(PATCH)(UPDATE)(DELETE)(HEAD)(OPTIONS))'
-    total_methods = [x.group(2) for x in re.finditer(re_http_methods, logfile, re.MULTILINE)]
+    total_methods = [(re.search(re_http_methods, line, re.MULTILINE)).group(2) for line in logfile]
     count_each_method = {i: total_methods.count(i) for i in total_methods}
     sorted_methods = sorted(count_each_method.items(), key=lambda x: x[1], reverse=True)
     return [{method: count} for method, count in sorted_methods]
 
 
-def top3_logest_requests():
-    logfilelist = logfile.splitlines()
-    top3 = sorted(logfilelist, key=lambda request: request.split(" ")[-1], reverse=True)[:3]
-
+def top3_longest_requests():
+    top3 = sorted(logfile, key=lambda request: request.split(" ")[-1], reverse=True)[:3]
     return top3
 
 
-total_stats = {
-    "Total Requests": len(total_requests()),
-    "Top 3 IP adresses": top3_ips(total_requests()),
-    "Total HTTP methods count": amount_of_http_methods(),
-    "Top 3 longest requests": top3_logest_requests()
-}
-print(top3_logest_requests())
-print(total_stats)
+print(len(total_requests()))
+print(top3_ips(total_requests()))
+print(amount_of_http_methods())
+print(top3_longest_requests())
