@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import re
 import argparse
 import os
@@ -19,23 +21,47 @@ parser.add_argument("--f",
                     type=check_path)
 args = parser.parse_args()
 
-re_request = r"^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
-
 for file in args.f:
     if file.endswith(".log"):
         with open(file) as log:
-            dict = [
-                {"total_requests": len([1 for x in re.finditer(re_request, log.read(), re.MULTILINE)])},
+            logfile = log.read()
 
-                    ]
-            print(dict)
+def total_requests():
+    """
+    :return: 1 for every valid request
+    """
+    re_request = r"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+    list_of_ips = [x.group(0) for x in re.finditer(re_request, logfile, re.MULTILINE)]
 
-# if os.path.isfile(args.f):
-#     with open(args.f) as file:
-#         print(file.read())
-#
-# if os.path.isdir(args.f):
-#     for file in os.listdir():
-#         if file.endswith(".log"):
-#             with open(file) as log:
-#                 print(log.read())
+    return list_of_ips
+
+
+def top3_ips(list_of_ips):
+    top_ips = {i: list_of_ips.count(i) for i in list_of_ips}
+    sorted_ips = sorted(top_ips.items(), key=lambda ip: ip[1], reverse=True)
+    return [{ip: count} for ip, count in sorted_ips[:3]]
+
+
+def amount_of_http_methods():
+    re_http_methods = r'(] ")((GET)|(POST)|(PUT)(PATCH)(UPDATE)(DELETE)(HEAD)(OPTIONS))'
+    total_methods = [x.group(2) for x in re.finditer(re_http_methods, logfile, re.MULTILINE)]
+    count_each_method = {i: total_methods.count(i) for i in total_methods}
+    sorted_methods = sorted(count_each_method.items(), key=lambda x: x[1], reverse=True)
+    return [{method: count} for method, count in sorted_methods]
+
+
+def top3_logest_requests():
+    logfilelist = logfile.splitlines()
+    top3 = sorted(logfilelist, key=lambda request: request.split(" ")[-1], reverse=True)[:3]
+
+    return top3
+
+
+total_stats = {
+    "Total Requests": len(total_requests()),
+    "Top 3 IP adresses": top3_ips(total_requests()),
+    "Total HTTP methods count": amount_of_http_methods(),
+    "Top 3 longest requests": top3_logest_requests()
+}
+print(top3_logest_requests())
+print(total_stats)
