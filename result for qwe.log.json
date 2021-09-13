@@ -19,9 +19,15 @@
             "POST": 7
         }
     ],
-    "Top 3 request duration and related IP + Method + URL": {
-        "9395": "81.88.222.215 POST http://almhuette-raith.at/administrator/",
-        "9184": "87.255.246.50 GET -",
-        "9200": "46.116.249.142 GET -"
-    }
+    "Top 3 by duration and related IP + Method + URL": [
+        {
+            "9395": "IP = 81.88.222.215, Method = POST, URL= http://almhuette-raith.at/administrator/"
+        },
+        {
+            "9200": "IP = 46.116.249.142, Method = GET, URL= -"
+        },
+        {
+            "9184": "IP = 87.255.246.50, Method = GET, URL= -"
+        }
+    ]
 }

@@ -84,21 +84,22 @@ for file in args.f:
 
                 # Only saving info about top3 request  by longest duration
                 if len(top3_request_by_duration) < 3:
-                    top3_request_by_duration[duration] = ip + " " + method + " " + url
+                    top3_request_by_duration[duration] = "IP = " + ip + ", Method = " + method + ", URL= " + url
                 else:
                     least_duration = min(top3_request_by_duration.keys())
                     if duration > least_duration:
                         top3_request_by_duration.pop(least_duration)
-                        top3_request_by_duration[duration] = ip + " " + method + " " + url
+                        top3_request_by_duration[duration] = "IP = " + ip + ", Method = " + method + ", URL= " + url
 
             top3_ips = sorted(dict_of_ips.items(), key=lambda x: x[1], reverse=True)[:3]
             methods = sorted(dict_of_methods.items(), key=lambda x: x[1], reverse=True)
+            top3_requests_sorted = sorted(top3_request_by_duration.items(), key = lambda x: x[0], reverse=True)
 
             result = {
                 "Total Requests": sum(dict_of_ips.values()),
                 "Top 3 IPs and their count": [{key: value} for key, value in top3_ips],
                 "Methods and their count": [{key: value} for key, value in methods],
-                "Top 3 request duration and related IP + Method + URL": top3_request_by_duration
+                "Top 3 by duration and related IP + Method + URL": [{key: value} for key, value in top3_requests_sorted]
             }
 
             print(f"===================Parsing result for {file}:")
