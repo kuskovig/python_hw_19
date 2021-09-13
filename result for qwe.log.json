@@ -1,0 +1,27 @@
+{
+    "Total Requests": 16,
+    "Top 3 IPs and their count": [
+        {
+            "81.88.222.215": 3
+        },
+        {
+            "176.194.214.104": 2
+        },
+        {
+            "189.16.1.18": 2
+        }
+    ],
+    "Methods and their count": [
+        {
+            "GET": 9
+        },
+        {
+            "POST": 7
+        }
+    ],
+    "Top 3 request duration and related IP + Method + URL": {
+        "9395": "81.88.222.215 POST http://almhuette-raith.at/administrator/",
+        "9184": "87.255.246.50 GET -",
+        "9200": "46.116.249.142 GET -"
+    }
+}

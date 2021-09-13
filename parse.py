@@ -21,37 +21,88 @@ parser.add_argument("--f",
                     type=check_path)
 args = parser.parse_args()
 
+# initializing all needed variables to store parsed data
+
+dict_of_ips = {}
+top3_ips = []
+re_http_methods = r'(] ")((GET)|(POST)|(PUT)(PATCH)(UPDATE)(DELETE)(HEAD)(OPTIONS))'
+dict_of_methods = {}
+top3_request_by_duration = {}
+
+"""
+Method stores unique IP addresses and counts times they appear
+"""
+
+
+def parse_ips(value):
+    if value in dict_of_ips.keys():
+        dict_of_ips[value] += 1
+    else:
+        dict_of_ips[value] = 1
+
+
+"""
+Method stores unique HTTP methods  and counts times they appear
+"""
+
+
+def parse_methods(value):
+    if value in dict_of_methods.keys():
+        dict_of_methods[value] += 1
+    else:
+        dict_of_methods[value] = 1
+
+
+"""
+For every .log file in folder:
+1. Opens file, reads line by line by line
+2. Gathers IP, method, referer URL and duration of request
+3. After reading file - combines all info and processes it. Result is printed in console and dumped in .json file
+4. Before reading next file - clears variables which store parsed info
+
+"""
+
 for file in args.f:
     if file.endswith(".log"):
+        # resetting variables
+        dict_of_ips.clear()
+        top3_ips.clear()
+        dict_of_methods.clear()
         with open(file) as log:
-            logfile = [x for x in log.readlines()]
+            for line in log:
+                # gathering IP address
+                ip = ''.join(line.split(" ")[:1])
+                parse_ips(ip)
 
+                # gathering method with Regexp
+                method = (re.search(re_http_methods, line, re.MULTILINE)).group(2)
+                parse_methods(method)
 
-def total_requests():
-    list_of_ips = [('').join(ip.split(" ")[:1]) for ip in logfile]
-    return list_of_ips
+                # gathering duration and referer url
+                duration = int(line.strip().split(" ")[-1])
+                url = line.split('\"')[-4]
 
+                # Only saving info about top3 request  by longest duration
+                if len(top3_request_by_duration) < 3:
+                    top3_request_by_duration[duration] = ip + " " + method + " " + url
+                else:
+                    least_duration = min(top3_request_by_duration.keys())
+                    if duration > least_duration:
+                        top3_request_by_duration.pop(least_duration)
+                        top3_request_by_duration[duration] = ip + " " + method + " " + url
 
-def top3_ips(list_of_ips):
-    top_ips = {i: list_of_ips.count(i) for i in list_of_ips}
-    sorted_ips = sorted(top_ips.items(), key=lambda ip: ip[1], reverse=True)
-    return [{ip: count} for ip, count in sorted_ips[:3]]
+            top3_ips = sorted(dict_of_ips.items(), key=lambda x: x[1], reverse=True)[:3]
+            methods = sorted(dict_of_methods.items(), key=lambda x: x[1], reverse=True)
 
+            result = {
+                "Total Requests": sum(dict_of_ips.values()),
+                "Top 3 IPs and their count": [{key: value} for key, value in top3_ips],
+                "Methods and their count": [{key: value} for key, value in methods],
+                "Top 3 request duration and related IP + Method + URL": top3_request_by_duration
+            }
 
-def amount_of_http_methods():
-    re_http_methods = r'(] ")((GET)|(POST)|(PUT)(PATCH)(UPDATE)(DELETE)(HEAD)(OPTIONS))'
-    total_methods = [(re.search(re_http_methods, line, re.MULTILINE)).group(2) for line in logfile]
-    count_each_method = {i: total_methods.count(i) for i in total_methods}
-    sorted_methods = sorted(count_each_method.items(), key=lambda x: x[1], reverse=True)
-    return [{method: count} for method, count in sorted_methods]
-
-
-def top3_longest_requests():
-    top3 = sorted(logfile, key=lambda request: request.split(" ")[-1], reverse=True)[:3]
-    return top3
-
-
-print(len(total_requests()))
-print(top3_ips(total_requests()))
-print(amount_of_http_methods())
-print(top3_longest_requests())
+            print(f"===================Parsing result for {file}:")
+            for item in result.items():
+                print(item)
+            with open(f"result for {file}.json", "w") as writer:
+                json.dump(result, writer, indent=4)
