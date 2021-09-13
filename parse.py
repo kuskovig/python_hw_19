@@ -93,7 +93,7 @@ for file in args.f:
 
             top3_ips = sorted(dict_of_ips.items(), key=lambda x: x[1], reverse=True)[:3]
             methods = sorted(dict_of_methods.items(), key=lambda x: x[1], reverse=True)
-            top3_requests_sorted = sorted(top3_request_by_duration.items(), key = lambda x: x[0], reverse=True)
+            top3_requests_sorted = sorted(top3_request_by_duration.items(), key=lambda x: x[0], reverse=True)
 
             result = {
                 "Total Requests": sum(dict_of_ips.values()),
