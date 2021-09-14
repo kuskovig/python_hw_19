@@ -10,7 +10,7 @@ def check_path(path):
     if os.path.isfile(path):
         return [path]
     elif os.path.isdir(path):
-        return os.listdir(path)
+        return [os.path.join(path, filename) for filename in os.listdir(path) if filename.endswith(".log")]
     else:
         raise argparse.ArgumentTypeError("Pass a valid path to .log file or to the directory ")
 
@@ -25,7 +25,8 @@ args = parser.parse_args()
 
 dict_of_ips = {}
 top3_ips = []
-re_http_methods = r'(] ")((GET)|(POST)|(PUT)(PATCH)(UPDATE)(DELETE)(HEAD)(OPTIONS))'
+re_methods = r'(] ")(([^ \n\r])*) ' # parses part of log line where method is stored
+re_request = r"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
 dict_of_methods = {}
 top3_request_by_duration = {}
 
@@ -63,19 +64,22 @@ For every .log file in folder:
 """
 
 for file in args.f:
-    if file.endswith(".log"):
-        # resetting variables
-        dict_of_ips.clear()
-        top3_ips.clear()
-        dict_of_methods.clear()
-        with open(file) as log:
-            for line in log:
+    # resetting variables
+    dict_of_ips.clear()
+    top3_ips.clear()
+    dict_of_methods.clear()
+    with open(file) as log:
+        for line in log:
+            if re.match(re_request, line):
                 # gathering IP address
                 ip = ''.join(line.split(" ")[:1])
                 parse_ips(ip)
 
                 # gathering method with Regexp
-                method = (re.search(re_http_methods, line, re.MULTILINE)).group(2)
+                try:
+                    method = (re.search(re_methods, line)).group(2)
+                except AttributeError:
+                    method = "no_method_found"
                 parse_methods(method)
 
                 # gathering duration and referer url
@@ -91,19 +95,19 @@ for file in args.f:
                         top3_request_by_duration.pop(least_duration)
                         top3_request_by_duration[duration] = "IP = " + ip + ", Method = " + method + ", URL= " + url
 
-            top3_ips = sorted(dict_of_ips.items(), key=lambda x: x[1], reverse=True)[:3]
-            methods = sorted(dict_of_methods.items(), key=lambda x: x[1], reverse=True)
-            top3_requests_sorted = sorted(top3_request_by_duration.items(), key=lambda x: x[0], reverse=True)
+        top3_ips = sorted(dict_of_ips.items(), key=lambda x: x[1], reverse=True)[:3]
+        methods = sorted(dict_of_methods.items(), key=lambda x: x[1], reverse=True)
+        top3_requests_sorted = sorted(top3_request_by_duration.items(), key=lambda x: x[0], reverse=True)
 
-            result = {
-                "Total Requests": sum(dict_of_ips.values()),
-                "Top 3 IPs and their count": [{key: value} for key, value in top3_ips],
-                "Methods and their count": [{key: value} for key, value in methods],
-                "Top 3 by duration and related IP + Method + URL": [{key: value} for key, value in top3_requests_sorted]
-            }
+        result = {
+            "Total Requests": sum(dict_of_ips.values()),
+            "Top 3 IPs and their count": [{key: value} for key, value in top3_ips],
+            "Methods and their count": [{key: value} for key, value in methods],
+            "Top 3 by duration and related IP + Method + URL": [{key: value} for key, value in top3_requests_sorted]
+        }
 
-            print(f"===================Parsing result for {file}:")
-            for item in result.items():
-                print(item)
-            with open(f"result for {file}.json", "w") as writer:
-                json.dump(result, writer, indent=4)
+        print(f"===================Parsing result for {os.path.basename(file)}:")
+        for item in result.items():
+            print(item)
+        with open(f"result for {os.path.basename(file)}.json", "w") as writer:
+            json.dump(result, writer, indent=4)
